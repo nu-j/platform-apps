@@ -1,0 +1,25 @@
+
+# Values come from platform-config via Argo multi-source on the spoke root Application.
+# These defaults are for local helm template / testing only.
+
+# Type of cluster, sandbox|dev|preprod|prod
+clusterType: sandbox
+# Group of the cluster
+clusterGroup: eng-sandbox
+# Name of cluster, eg. sandbox
+clusterName: eng-sandbox-kilkenny
+# Region of the cluster
+region: kilkenny
+# Global platform Config
+platform:
+  version: main
+#    argocd:
+#      syncPolicy:
+#        automated:
+#          prune: false
+#          selfHeal: false
+#        syncOptions:
+#          - Validate=true
+#          - CreateNamespace=false
+#          - RespectIgnoreDifferences=true
+#          - ServerSideApply=true

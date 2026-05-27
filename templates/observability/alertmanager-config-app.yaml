@@ -1,0 +1,54 @@
+# NOTE - this example
+{{- if ((((.Values.platform).argocdApps).alertmanagerConfig).enabled | default false) }}
+{{- $appConfig := ((.Values.platform).argocdApps).alertmanagerConfig }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: alertmanager-config
+  namespace: platform-tools
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    platform/chart: alertmanager
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ $vars.destinationNamespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  info:
+   - name: "Chart Gitlab repo URL"
+     value: "{{ $vars.repoURL }}"
+  sources:
+    - helm:
+        valueFiles:
+          {{- include "default.valueFiles" (dict "vars" $vars) | nindent 10 }}
+          - $platform_values/clusters/{{ $vars.clusterType }}/{{ $vars.clusterGroup }}/{{ $vars.region }}/alertmanager.yaml
+        {{- if $appConfig.values }}
+        valuesObject: {{ $appConfig.values | toYaml | nindent 10 }}
+        {{- end }}
+        ignoreMissingValueFiles: true
+      {{- if $vars.path }}
+      path: {{ $vars.path }}
+      {{- else if $vars.chart }}
+      chart: {{ $vars.chart }}
+      {{- end }}
+      repoURL: {{ $vars.repoURL }}
+      targetRevision: {{ $vars.targetRevision }}
+    - path: .
+      ref: platform_values
+      repoURL: https://github.com/purple-monkey/platform-config.git
+      targetRevision: {{ $vars.platformVersion }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}

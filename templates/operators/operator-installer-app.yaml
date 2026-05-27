@@ -1,0 +1,67 @@
+{{- if .Values.operators }}
+{{- $operatorInstaller := (.Values.platform).operatorInstaller }}
+{{- $installerRepoURL := (required "operatorInstaller.repoURL is required" $operatorInstaller.repoURL) }}
+{{- $installerTargetRevision := (default "main" $operatorInstaller.targetRevision) }}
+{{- $installerPath := (default "charts/operators-installer" $operatorInstaller.path) }}
+{{- $platformSyncPolicy := (default false ((.Values.platform).argocd).syncPolicy) }}
+{{- $platformVersion := (required "platform.version is required" (.Values.platform).version) }}
+{{- range $operator := .Values.operators }}
+{{- $customSyncPolicy := (default false (($operator).syncPolicy)) }}
+{{- if $operator.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  name: {{ default $operator.name $operator.appname }}
+  namespace: platform-tools
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    platform/chart: operators-installer
+    platform/version: {{ $platformVersion }}
+spec:
+  destination:
+    namespace: {{ $operator.destination.namespace }}
+    server: {{ $operator.destination.server | default "https://kubernetes.default.svc" }}
+  project: default
+  sources:
+    - helm:
+        valuesObject:
+          approveManualInstallPlanViaHook: {{ default "false" $operatorInstaller.approveManualInstallPlanViaHook }}
+          createOperatorGroup: {{ default "true" $operator.createOperatorGroup }}
+          {{- if $operator.createOperatorGroup }}
+          operatorGroups:
+            - name: {{ $operator.operatorGroupName }}
+              namespace: {{ default $operator.operatorGroupName $operator.operatorGroupNamespace }}
+              createNamespace: {{ default "false" $operator.createNamespace }}
+              targetOwnNamespace: {{ default "false" $operator.targetOwnNamespace }}
+          {{- end }}
+          {{- if $operator.operators }}
+          operators: {{ $operator.operators | toYaml | nindent 12 }}
+          {{ else }}
+          operators:
+            - name: {{ $operator.name }}
+              channel: {{ $operator.channel }}
+              csv: {{ $operator.csv }}
+              source: {{ $operator.source }}
+              installPlanApproval: {{ default "Manual" $operatorInstaller.installPlanApproval }}
+              sourceNamespace: openshift-marketplace
+              {{- if $operator.config }}
+              config: {{ $operator.config | toYaml | nindent 16 }}
+              {{- end }}
+          {{ end }}
+      path:  {{ $installerPath }}
+      repoURL: {{ $installerRepoURL }}
+      targetRevision: {{ $installerTargetRevision }}
+{{- if $customSyncPolicy }}
+  syncPolicy: {{ $customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $platformSyncPolicy }}
+  syncPolicy: {{ $platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,7 @@
+apiVersion: v2
+name: platform-apps
+description: App-of-apps factory for spoke clusters. Leaf charts live under helm-catalog/.
+type: application
+version: 0.0.2
+appVersion: 1.0.0
+icon: https://avatars1.githubusercontent.com/u/68044996?s=200&v=4
