@@ -43,7 +43,7 @@ spec:
       targetRevision: {{ $vars.targetRevision }}
     - path: .
       ref: platform_values
-      repoURL: https://github.com/purple-monkey/platform-config.git
+      repoURL: https://github.com/nu-j/platform-config.git
       targetRevision: {{ $vars.platformVersion }}
 {{- if $vars.customSyncPolicy }}
   syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}

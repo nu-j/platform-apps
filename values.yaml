@@ -2,14 +2,14 @@
 # Values come from platform-config via Argo multi-source on the spoke root Application.
 # These defaults are for local helm template / testing only.
 
-# Type of cluster, sandbox|dev|preprod|prod
-clusterType: sandbox
-# Group of the cluster
-clusterGroup: eng-sandbox
-# Name of cluster, eg. sandbox
-clusterName: eng-sandbox-kilkenny
-# Region of the cluster
-region: kilkenny
+# Type of cluster: dev|preprod|prod|hub
+clusterType: dev
+# Group of the cluster (matches directory name under clusters/<clusterType>/)
+clusterGroup: eng
+# Name of cluster
+clusterName: arkham-dev-eu-west-1
+# Region of the cluster (matches directory name under clusters/<clusterType>/<clusterGroup>/)
+region: eu-west-1
 # Global platform Config
 platform:
   version: main

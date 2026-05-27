@@ -22,7 +22,6 @@ templates/
 ├── security/                                     # ACS, certs, auth
 │   └── advanced-cluster-security-app.yaml
 ├── capabilities/                                 # developer platform services
-│   ├── platform-tools-argocd-app.yaml
 │   └── stakater-reloader-app.yaml
 └── operators/                                    # OLM operator lifecycle
     └── operator-installer-app.yaml
@@ -37,7 +36,7 @@ Values come from `platform-config` via Argo multi-source in production. For loca
 ```bash
 helm template platform . \
   -f ../platform-config/default.yaml \
-  -f ../platform-config/dev/common.yaml
+  -f ../platform-config/clusters/dev/common.yaml
 ```
 
 ## Adding a new platform component
