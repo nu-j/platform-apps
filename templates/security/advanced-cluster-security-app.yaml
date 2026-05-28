@@ -1,6 +1,4 @@
-# TODO CHANGE THIS TO NEW NEW "advancedClusterSecurity" PROPERTY 
 {{- if ((((.Values.platform).argocdApps).advancedClusterSecurity).enabled | default false) }}
-# TODO CHANGE THIS TO NEW NEW "advancedClusterSecurity" PROPERTY 
 {{- $appConfig := ((.Values.platform).argocdApps).advancedClusterSecurity }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
@@ -33,7 +31,6 @@ spec:
         valuesObject: {{ $appConfig.values | toYaml | nindent 10 }}
         {{- end }}
         ignoreMissingValueFiles: true
-      # TODO WATCH THIS PATH FOR ACURACY...
       {{- if $vars.path }}
       path: {{ $vars.path }}
       {{- else if $vars.chart }}
