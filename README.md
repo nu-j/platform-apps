@@ -10,24 +10,29 @@ Leaf charts (actual K8s resources) live in the **helm-catalog** repo.
 
 ## Template layout
 
-`_helpers.tpl` stays at `templates/` root. Domain subdirs group application templates by concern:
+`_helpers.tpl` stays at `templates/` root. Templates are split into three directories by cluster scope:
 
 ```
 templates/
-├── _helpers.tpl                                  # shared helpers (default.variables, default.valueFiles)
-├── infra/                                        # cluster node infrastructure
-│   └── rosa-machine-pool-app.yaml
-├── observability/                                # monitoring, alerting, logging
-│   └── alertmanager-config-app.yaml
-├── security/                                     # ACS, certs, auth
+├── _helpers.tpl          # shared helpers (default.variables, default.valueFiles)
+├── hub/                  # rendered only when clusterType=hub
 │   └── advanced-cluster-security-app.yaml
-├── capabilities/                                 # developer platform services
-│   └── stakater-reloader-app.yaml
-└── operators/                                    # OLM operator lifecycle
+├── spoke/                # rendered only when clusterType!=hub
+│   ├── capabilities/     # consumer-facing platform services (Reloader, Strimzi, etc.)
+│   │   └── stakater-reloader-app.yaml
+│   └── rosa-machine-pool-app.yaml
+└── shared/               # rendered for all cluster types
+    ├── alertmanager-config-app.yaml
     └── operator-installer-app.yaml
 ```
 
-New templates go into the matching domain subdir. `platform-config` keys remain flat (`platform.argocdApps.*`).
+Hub and spoke templates carry `clusterType` guards at the top. `repoURL`, `path`, and `targetRevision` are baked into each template as defaults — override them from `platform-config` only when needed (e.g. to pin a chart version per cluster).
+
+**Directory intent:**
+- `hub/` — management-plane tools (ACS, future ACM integrations)
+- `spoke/capabilities/` — consumer-facing platform services offered to development teams
+- `spoke/` root — spoke infrastructure (ROSA MachinePools, future node-level tooling)
+- `shared/` — cross-cutting concerns that apply to all cluster types
 
 ## Local render (dry-run / review)
 

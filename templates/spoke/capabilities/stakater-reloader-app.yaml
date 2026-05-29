@@ -1,19 +1,20 @@
-{{- if ((((.Values.platform).argocdApps).rosaMachinePool).enabled | default false) }}
-{{- $appConfig := ((.Values.platform).argocdApps).rosaMachinePool }}
+{{- if and (ne .Values.clusterType "hub") (((((.Values.platform).argocdApps).stakaterReloader).enabled) | default false) }}
+{{- $appConfig := ((.Values.platform).argocdApps).stakaterReloader }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
-{{- $pool := ((.Values.rosa).machinePools).platform | default dict }}
-{{- if $pool.enabled }}
+{{- $repoURL        := default "https://stakater.github.io/stakater-charts" $vars.repoURL -}}
+{{- $chart          := default "reloader" $vars.chart -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: rosa-machine-pool-{{ $pool.name | default "platform" }}
+  name: stakater-reloader-{{ $vars.clusterName }}
   namespace: platform-tools
   annotations:
     argocd.argoproj.io/sync-wave: "1"
   labels:
-    platform/chart: rosa-machine-pool
+    platform/chart: reloader
     platform/version: {{ $vars.platformVersion }}
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -22,21 +23,24 @@ spec:
     namespace: {{ $vars.destinationNamespace }}
     server: https://kubernetes.default.svc
   project: default
+  info:
+   - name: "Chart repo URL"
+     value: "{{ $repoURL }}"
   source:
     helm:
       valuesObject:
-        rosa:
-          machinePools:
-            platform: {{ $pool | toYaml | nindent 12 }}
-    path: {{ $vars.path }}
-    repoURL: {{ $vars.repoURL }}
-    targetRevision: {{ $vars.targetRevision }}
+        reloader:
+          deployment:
+            securityContext:
+              runAsUser: null
+    chart: {{ $chart }}
+    repoURL: {{ $repoURL }}
+    targetRevision: {{ $targetRevision }}
 {{- if $vars.customSyncPolicy }}
   syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
 {{- else if $vars.platformSyncPolicy }}
   syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
 {{- else }}
   syncPolicy: {}
-{{- end }}
 {{- end }}
 {{- end }}

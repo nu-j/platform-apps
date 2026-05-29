@@ -1,8 +1,8 @@
 {{- define "default.variables" -}}
-{{- $_ := set .vars "repoURL" (required "repoURL missing" .appConfig.repoURL) -}}
+{{- $_ := set .vars "repoURL" (default "" .appConfig.repoURL) -}}
 {{- $_ := set .vars "chart" (default false .appConfig.chart) -}}
 {{- $_ := set .vars "path" (default false .appConfig.path) -}}
-{{- $_ := set .vars "targetRevision" (required "targetRevision missing" .appConfig.targetRevision) -}}
+{{- $_ := set .vars "targetRevision" (default "main" .appConfig.targetRevision) -}}
 {{- $_ := set .vars "platformSyncPolicy" (default false ((.Values.platform).argocd).syncPolicy) -}}
 {{- $_ := set .vars "customSyncPolicy" (default false ((.appConfig).syncPolicy)) -}}
 {{- $_ := set .vars "platformVersion" (required "platform.version is required" (.Values.platform).version) -}}

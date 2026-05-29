@@ -1,0 +1,45 @@
+{{- if and (ne .Values.clusterType "hub") (((((.Values.platform).argocdApps).rosaMachinePool).enabled) | default false) }}
+{{- $appConfig := ((.Values.platform).argocdApps).rosaMachinePool }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
+{{- $path           := default "rosa-machine-pool" $vars.path -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
+{{- $pool := ((.Values.rosa).machinePools).platform | default dict }}
+{{- if $pool.enabled }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: rosa-machine-pool-{{ $pool.name | default "platform" }}
+  namespace: platform-tools
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    platform/chart: rosa-machine-pool
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ $vars.destinationNamespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    helm:
+      valuesObject:
+        rosa:
+          machinePools:
+            platform: {{ $pool | toYaml | nindent 12 }}
+    path: {{ $path }}
+    repoURL: {{ $repoURL }}
+    targetRevision: {{ $targetRevision }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}
+{{- end }}

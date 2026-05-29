@@ -1,8 +1,10 @@
-# NOTE - this example
 {{- if ((((.Values.platform).argocdApps).alertmanagerConfig).enabled | default false) }}
 {{- $appConfig := ((.Values.platform).argocdApps).alertmanagerConfig }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/platform-apps.git" $vars.repoURL -}}
+{{- $path           := default "alertmanager" $vars.path -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -22,8 +24,8 @@ spec:
     server: https://kubernetes.default.svc
   project: default
   info:
-   - name: "Chart Gitlab repo URL"
-     value: "{{ $vars.repoURL }}"
+   - name: "Chart repo URL"
+     value: "{{ $repoURL }}"
   sources:
     - helm:
         valueFiles:
@@ -33,13 +35,9 @@ spec:
         valuesObject: {{ $appConfig.values | toYaml | nindent 10 }}
         {{- end }}
         ignoreMissingValueFiles: true
-      {{- if $vars.path }}
-      path: {{ $vars.path }}
-      {{- else if $vars.chart }}
-      chart: {{ $vars.chart }}
-      {{- end }}
-      repoURL: {{ $vars.repoURL }}
-      targetRevision: {{ $vars.targetRevision }}
+      path: {{ $path }}
+      repoURL: {{ $repoURL }}
+      targetRevision: {{ $targetRevision }}
     - path: .
       ref: platform_values
       repoURL: https://github.com/nu-j/platform-config.git
