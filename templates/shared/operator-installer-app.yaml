@@ -15,7 +15,7 @@ metadata:
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   name: {{ default $operator.name $operator.appname }}
-  namespace: platform-tools
+  namespace: openshift-gitops
   annotations:
     argocd.argoproj.io/sync-wave: "0"
   labels:
