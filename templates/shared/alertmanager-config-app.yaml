@@ -30,7 +30,7 @@ spec:
     - helm:
         valueFiles:
           {{- include "default.valueFiles" (dict "vars" $vars) | nindent 10 }}
-          - $platform_values/clusters/{{ $vars.clusterType }}/{{ $vars.clusterGroup }}/{{ $vars.region }}/alertmanager.yaml
+          - $platform_values/clusters/{{ $vars.clusterType }}/{{ $vars.clusterGroup }}/alertmanager.yaml
         {{- if $appConfig.values }}
         valuesObject: {{ $appConfig.values | toYaml | nindent 10 }}
         {{- end }}

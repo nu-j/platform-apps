@@ -1,0 +1,48 @@
+{{- if ((((.Values.platform).argocdApps).clusterBannerConfig).enabled | default false) }}
+{{- $appConfig := ((.Values.platform).argocdApps).clusterBannerConfig }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-banner
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    platform/chart: cluster-banner
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    # ConsoleNotification is cluster-scoped — namespace is informational only
+    namespace: {{ $vars.destinationNamespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: {{ $repoURL }}
+    path: cluster-banner
+    targetRevision: {{ $targetRevision }}
+    helm:
+      # Pass cluster identity and theme from the merged platform-config values
+      valuesObject:
+        clusterType: {{ $vars.clusterType }}
+        clusterGroup: {{ $vars.clusterGroup }}
+        clusterName: {{ $vars.clusterName }}
+        clusterTheme:
+          banner:
+            color: {{ ((.Values.clusterTheme).banner).color | default "#ffffff" | quote }}
+            backgroundColor: {{ ((.Values.clusterTheme).banner).backgroundColor | default "#28a745" | quote }}
+            location: {{ ((.Values.clusterTheme).banner).location | default "BannerTop" | quote }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}

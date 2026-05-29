@@ -5,9 +5,9 @@
 # Type of cluster: dev|preprod|prod|hub
 clusterType: dev
 # Group of the cluster (matches directory name under clusters/<clusterType>/)
-clusterGroup: eng
+clusterGroup: payments
 # Name of cluster
-clusterName: arkham-dev-eu-west-1
+clusterName: payments-dev-eu-west-1
 # Region of the cluster (matches directory name under clusters/<clusterType>/<clusterGroup>/)
 region: eu-west-1
 # Global platform Config

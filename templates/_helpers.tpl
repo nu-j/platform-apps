@@ -15,9 +15,17 @@
 {{- end -}}
 
 {{- define "default.valueFiles" -}}
+{{- /*
+  Four-layer merge (each later file overrides earlier keys):
+    1. default.yaml          — global defaults for every cluster
+    2. regions/<r>/region.yaml — region-level overrides (DNS, cloud config, etc.)
+    3. clusters/<type>/common.yaml — per-environment defaults (dev / preprod / prod / hub)
+    4. clusters/<type>/<group>/clusterdef.yaml — single cluster definition (one folder = one cluster)
+
+  ignoreMissingValueFiles is set on callers, so absent files are silently skipped.
+*/ -}}
 - $platform_values/default.yaml
 - $platform_values/regions/{{ .vars.region }}/region.yaml
 - $platform_values/clusters/{{ .vars.clusterType }}/common.yaml
-- $platform_values/clusters/{{ .vars.clusterType }}/{{ .vars.clusterGroup }}/groupdef.yaml
-- $platform_values/clusters/{{ .vars.clusterType }}/{{ .vars.clusterGroup }}/{{ .vars.region }}/clusterdef.yaml
+- $platform_values/clusters/{{ .vars.clusterType }}/{{ .vars.clusterGroup }}/clusterdef.yaml
 {{- end -}}
