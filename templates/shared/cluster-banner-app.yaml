@@ -38,6 +38,9 @@ spec:
             color: {{ ((.Values.clusterTheme).banner).color | default "#ffffff" | quote }}
             backgroundColor: {{ ((.Values.clusterTheme).banner).backgroundColor | default "#28a745" | quote }}
             location: {{ ((.Values.clusterTheme).banner).location | default "BannerTop" | quote }}
+            {{- if ((.Values.clusterTheme).banner).text }}
+            text: {{ .Values.clusterTheme.banner.text | quote }}
+            {{- end }}
 {{- if $vars.customSyncPolicy }}
   syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
 {{- else if $vars.platformSyncPolicy }}
