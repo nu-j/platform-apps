@@ -20,6 +20,7 @@ templates/
 ├── spoke/                # rendered only when clusterType!=hub
 │   ├── capabilities/     # consumer-facing platform services (Reloader, Strimzi, etc.)
 │   │   └── stakater-reloader-app.yaml
+│   ├── devspaces-app.yaml
 │   └── rosa-machine-pool-app.yaml
 └── shared/               # rendered for all cluster types
     ├── alertmanager-config-app.yaml
