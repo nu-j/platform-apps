@@ -1,0 +1,58 @@
+{{- /*
+  platform-config-snapshot-app.yaml — Argo CD Application for the config snapshot ConfigMap.
+  Rendered on all cluster types (hub and spoke) — the snapshot is universally useful.
+  Enabled via platform.argocdApps.platformConfigSnapshot.enabled in platform-config.
+
+  The multi-source valueFiles chain means Argo CD merges all four config layers before
+  rendering the chart, so the resulting ConfigMap reflects the exact effective config.
+*/ -}}
+{{- if ((((.Values.platform).argocdApps).platformConfigSnapshot).enabled | default false) }}
+{{- $appConfig := ((.Values.platform).argocdApps).platformConfigSnapshot }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
+{{- $path           := default "platform-config-snapshot" $vars.path -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: platform-config-snapshot
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    platform/chart: platform-config-snapshot
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ $vars.destinationNamespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  info:
+    - name: "Chart repo URL"
+      value: "https://github.com/nu-j/helm-catalog.git"
+    - name: "Purpose"
+      value: "Read-only ConfigMap showing fully merged platform-config values for this cluster"
+  sources:
+    - helm:
+        valueFiles:
+          {{- include "default.valueFiles" (dict "vars" $vars) | nindent 10 }}
+        ignoreMissingValueFiles: true
+      path: {{ $path }}
+      repoURL: {{ $repoURL }}
+      targetRevision: {{ $targetRevision }}
+    - path: .
+      ref: platform_values
+      repoURL: https://github.com/nu-j/platform-config.git
+      targetRevision: {{ $vars.platformVersion }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}

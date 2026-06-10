@@ -25,7 +25,8 @@ templates/
 └── shared/               # rendered for all cluster types
     ├── alertmanager-config-app.yaml
     ├── cluster-banner-app.yaml
-    └── operator-installer-app.yaml
+    ├── operator-installer-app.yaml
+    └── platform-config-snapshot-app.yaml
 ```
 
 Hub and spoke templates carry `clusterType` guards at the top. `repoURL`, `path`, and `targetRevision` are baked into each template as defaults — override them from `platform-config` only when needed (e.g. to pin a chart version per cluster).
