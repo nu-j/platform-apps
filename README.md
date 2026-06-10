@@ -23,6 +23,7 @@ templates/
 │   └── rosa-machine-pool-app.yaml
 └── shared/               # rendered for all cluster types
     ├── alertmanager-config-app.yaml
+    ├── cluster-banner-app.yaml
     └── operator-installer-app.yaml
 ```
 

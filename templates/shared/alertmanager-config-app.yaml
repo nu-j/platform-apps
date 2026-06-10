@@ -2,7 +2,7 @@
 {{- $appConfig := ((.Values.platform).argocdApps).alertmanagerConfig }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
-{{- $repoURL        := default "https://github.com/nu-j/platform-apps.git" $vars.repoURL -}}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
 {{- $path           := default "alertmanager" $vars.path -}}
 {{- $targetRevision := default "main" $vars.targetRevision -}}
 ---
@@ -25,7 +25,7 @@ spec:
   project: default
   info:
    - name: "Chart repo URL"
-     value: "{{ $repoURL }}"
+     value: "https://github.com/nu-j/helm-catalog.git"
   sources:
     - helm:
         valueFiles:

@@ -4,7 +4,7 @@
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
 {{- $repoURL        := default "https://stakater.github.io/stakater-charts" $vars.repoURL -}}
 {{- $chart          := default "reloader" $vars.chart -}}
-{{- $targetRevision := default "main" $vars.targetRevision -}}
+{{- $targetRevision := default "1.0.121" $vars.targetRevision -}}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
