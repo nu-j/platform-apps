@@ -1,0 +1,61 @@
+{{- /*
+  argocd-instance-app.yaml — Argo CD Application for ArgoCD instance configuration.
+  Shared: rendered on both hub and spoke clusters.
+  Enabled via platform.argocdApps.argocdInstanceConfig.enabled in platform-config.
+
+  Patches the operator-managed ArgoCD CR via SSA (spec.rbac, resources, resourceExclusions)
+  and creates RoleBindings for platform admins and the cluster AD group.
+
+  sync-wave "1" — the operator subscription must be installed (wave "0") before this runs.
+  The ArgoCD CR must already exist when this Application syncs.
+*/ -}}
+{{- if ((((.Values.platform).argocdApps).argocdInstanceConfig).enabled | default false) }}
+{{- $appConfig := ((.Values.platform).argocdApps).argocdInstanceConfig }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
+{{- $path           := default "argocd-instance" $vars.path -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-instance-config
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    platform/chart: argocd-instance
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ $vars.destinationNamespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  info:
+    - name: "Chart repo URL"
+      value: "https://github.com/nu-j/helm-catalog.git"
+    - name: "Purpose"
+      value: "Patches ArgoCD CR RBAC/resources via SSA and creates openshift-gitops namespace RoleBindings"
+  sources:
+    - helm:
+        valueFiles:
+          {{- include "default.valueFiles" (dict "vars" $vars) | nindent 10 }}
+        ignoreMissingValueFiles: true
+      path: {{ $path }}
+      repoURL: {{ $repoURL }}
+      targetRevision: {{ $targetRevision }}
+    - path: .
+      ref: platform_values
+      repoURL: https://github.com/nu-j/platform-config.git
+      targetRevision: {{ $vars.platformVersion }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}

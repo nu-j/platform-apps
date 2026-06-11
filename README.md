@@ -24,6 +24,7 @@ templates/
 │   └── rosa-machine-pool-app.yaml
 └── shared/               # rendered for all cluster types
     ├── alertmanager-config-app.yaml
+    ├── argocd-instance-app.yaml
     ├── cluster-banner-app.yaml
     ├── operator-installer-app.yaml
     └── platform-config-snapshot-app.yaml
