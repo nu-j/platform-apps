@@ -1,0 +1,52 @@
+{{- $appConfig := ((.Values.platform).argocdApps).clusterGuardrails }}
+{{- if and ($appConfig.enabled | default false) (ne .Values.clusterType "hub") }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
+{{- $np := (.Values.clusterGuardrails).networkPolicy | default dict }}
+{{- $pt := (.Values.clusterGuardrails).projectTemplate | default dict }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cluster-guardrails
+  namespace: openshift-gitops
+  annotations:
+    # Wave 0 — must land before workload-level applications so the project template
+    # is in place before any team runs `oc new-project`.
+    argocd.argoproj.io/sync-wave: "0"
+  labels:
+    platform/chart: cluster-guardrails
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    # Template and project config are both in openshift-config
+    namespace: openshift-config
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: {{ $repoURL }}
+    path: cluster-guardrails
+    targetRevision: {{ $targetRevision }}
+    helm:
+      valuesObject:
+        clusterType: {{ $vars.clusterType }}
+        clusterGroup: {{ $vars.clusterGroup }}
+        clusterName: {{ $vars.clusterName }}
+        {{- if $np }}
+        networkPolicy: {{ $np | toYaml | nindent 10 }}
+        {{- end }}
+        {{- if $pt }}
+        projectTemplate: {{ $pt | toYaml | nindent 10 }}
+        {{- end }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}
