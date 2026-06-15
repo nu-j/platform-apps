@@ -1,0 +1,76 @@
+{{- $appConfig := ((.Values.platform).argocdApps).githubAuth }}
+{{- if and ($appConfig.enabled | default false) (ne .Values.clusterType "hub") }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
+{{- $gh := .Values.githubAuth | default dict }}
+{{- $gs := $gh.groupSync | default dict }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: github-auth
+  namespace: openshift-gitops
+  annotations:
+    # Wave 2 — lands after operators (wave 0) and argocd-instance (wave 1).
+    # group-sync-operator must be running before the GroupSync CR is applied.
+    argocd.argoproj.io/sync-wave: "2"
+  labels:
+    platform/chart: github-auth
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    # OAuth CR and GroupSync are cluster-scoped or cross-namespace;
+    # openshift-config is the home namespace for the OAuth client secret reference.
+    namespace: openshift-config
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: {{ $repoURL }}
+    path: github-auth
+    targetRevision: {{ $targetRevision }}
+    helm:
+      valuesObject:
+        clusterType: {{ $vars.clusterType }}
+        clusterGroup: {{ $vars.clusterGroup }}
+        clusterName: {{ $vars.clusterName }}
+        github:
+          {{- if $gh.clientID }}
+          clientID: {{ $gh.clientID | quote }}
+          {{- end }}
+          {{- if $gh.idpName }}
+          idpName: {{ $gh.idpName | quote }}
+          {{- end }}
+          {{- if $gh.secretName }}
+          secretName: {{ $gh.secretName | quote }}
+          {{- end }}
+          {{- if $gh.organizations }}
+          organizations: {{ $gh.organizations | toYaml | nindent 12 }}
+          {{- end }}
+          {{- if $gh.teams }}
+          teams: {{ $gh.teams | toYaml | nindent 12 }}
+          {{- end }}
+        groupSync:
+          {{- if hasKey $gs "enabled" }}
+          enabled: {{ $gs.enabled }}
+          {{- end }}
+          {{- if $gs.organization }}
+          organization: {{ $gs.organization | quote }}
+          {{- end }}
+          {{- if $gs.schedule }}
+          schedule: {{ $gs.schedule | quote }}
+          {{- end }}
+          {{- if $gs.credentialSecretName }}
+          credentialSecretName: {{ $gs.credentialSecretName | quote }}
+          {{- end }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}
