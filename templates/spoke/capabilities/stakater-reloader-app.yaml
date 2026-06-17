@@ -1,4 +1,4 @@
-{{- if and (ne .Values.clusterType "hub") (((((.Values.platform).argocdApps).stakaterReloader).enabled) | default false) }}
+{{- if and (ne .Values.clusterType "management") (((((.Values.platform).argocdApps).stakaterReloader).enabled) | default false) }}
 {{- $appConfig := ((.Values.platform).argocdApps).stakaterReloader }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}

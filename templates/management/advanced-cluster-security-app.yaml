@@ -1,4 +1,4 @@
-{{- if and (eq .Values.clusterType "hub") (((((.Values.platform).argocdApps).advancedClusterSecurity).enabled) | default false) }}
+{{- if and (eq .Values.clusterType "management") (((((.Values.platform).argocdApps).advancedClusterSecurity).enabled) | default false) }}
 {{- $appConfig := ((.Values.platform).argocdApps).advancedClusterSecurity }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}

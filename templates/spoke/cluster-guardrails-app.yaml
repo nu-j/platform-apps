@@ -1,5 +1,5 @@
 {{- $appConfig := ((.Values.platform).argocdApps).clusterGuardrails }}
-{{- if and ($appConfig.enabled | default false) (ne .Values.clusterType "hub") }}
+{{- if and ($appConfig.enabled | default false) (ne .Values.clusterType "management") }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
 {{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}

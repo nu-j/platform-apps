@@ -5,7 +5,7 @@
   The operator itself is installed by operator-installer (sync-wave "0"); this chart
   deploys the CheCluster CR at sync-wave "1" once the operator is ready.
 */ -}}
-{{- if and (ne .Values.clusterType "hub") ((((.Values.platform).argocdApps).devspacesConfig).enabled | default false) }}
+{{- if and (ne .Values.clusterType "management") ((((.Values.platform).argocdApps).devspacesConfig).enabled | default false) }}
 {{- $appConfig := ((.Values.platform).argocdApps).devspacesConfig }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}

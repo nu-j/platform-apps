@@ -1,4 +1,4 @@
-{{- if and (ne .Values.clusterType "hub") (((((.Values.platform).argocdApps).rosaMachinePool).enabled) | default false) }}
+{{- if and (ne .Values.clusterType "management") (((((.Values.platform).argocdApps).rosaMachinePool).enabled) | default false) }}
 {{- $appConfig := ((.Values.platform).argocdApps).rosaMachinePool }}
 {{- $vars := dict -}}
 {{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
