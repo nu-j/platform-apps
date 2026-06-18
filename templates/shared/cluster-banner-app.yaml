@@ -33,6 +33,9 @@ spec:
         clusterType: {{ $vars.clusterType }}
         clusterGroup: {{ $vars.clusterGroup }}
         clusterName: {{ $vars.clusterName }}
+        # regionName flows from regions/<r>/region.yaml (layer 2). Falls back to the region
+        # path key if a region file omits the explicit regionName field.
+        regionName: {{ .Values.regionName | default .Values.region }}
         clusterTheme:
           banner:
             color: {{ ((.Values.clusterTheme).banner).color | default "#ffffff" | quote }}
