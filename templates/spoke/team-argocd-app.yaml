@@ -1,0 +1,57 @@
+{{- /*
+  team-argocd-app.yaml — generates one Argo CD Application per team registered
+  in .Values.teams (from platform-config).
+
+  .Values.teams is a map (not a list) so that Helm's deep merge works correctly
+  across config layers. A team defined in common.yaml and another in clusterdef.yaml
+  will both be present in the merged result — neither silently overwrites the other.
+
+  Unlike all other spoke templates (one Application per file), this template uses
+  range to generate multiple Applications from a single file — one per team.
+  An empty or absent .Values.teams map is safe: the range produces no output.
+
+  Each generated Application deploys helm-catalog/team-argocd to the spoke cluster,
+  provisioning an isolated ArgoCD instance, RBAC, AppProject, and root Application
+  for the team. After that the team is fully self-service.
+
+  Sync wave 3 — after platform infrastructure (operators, guardrails, banner) is stable.
+*/ -}}
+{{- range $teamName, $teamConfig := .Values.teams }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ printf "team-argocd-%s" $teamName | quote }}
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  labels:
+    platform/chart: team-argocd
+    platform/team: {{ $teamName | quote }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ printf "%s-gitops" $teamName | quote }}
+    server: https://kubernetes.default.svc
+  project: default
+  source:
+    repoURL: https://github.com/nu-j/helm-catalog.git
+    path: team-argocd
+    targetRevision: main
+    helm:
+      valuesObject:
+        team:
+          name: {{ $teamName | quote }}
+          gitopsRepoURL: {{ $teamConfig.gitopsRepoURL | quote }}
+          targetRevision: {{ $teamConfig.targetRevision | default "main" | quote }}
+          namespacePrefix: {{ $teamConfig.namespacePrefix | default $teamName | quote }}
+          adGroupName: {{ $teamConfig.adGroupName | default "" | quote }}
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - Validate=true
+      - CreateNamespace=true
+{{- end }}
