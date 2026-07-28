@@ -1,0 +1,68 @@
+{{- /*
+  team-bootstrap-app.yaml — generates one platform-side Application per team that
+  runs bootstrap-project using the platform ArgoCD (cluster-wide access).
+
+  WHY THIS EXISTS — the multi-tenancy boundary:
+  Team ArgoCD instances run in namespaced mode (OpenShift GitOps operator constraint).
+  Namespaced-mode controllers cannot manage cluster-scoped resources such as Namespace
+  objects regardless of Kubernetes RBAC. Namespace creation must happen via the platform
+  ArgoCD which has cluster-wide access.
+
+  HOW SELF-SERVICE IS PRESERVED:
+  Each team owns a bootstrap-config.yaml in the root of their gitops repo.
+  This file is the standard bootstrap-project values schema (team, systems, bindings).
+  When a team wants a new namespace, they commit to their own repo — no platform team
+  involvement required. This Application polls the team repo and reconciles automatically.
+
+  MULTI-SOURCE:
+  ArgoCD multi-source Applications (v2.6+, OpenShift GitOps v1.10+) allow combining
+  a chart from one repo with value files from a second repo.
+  Source 1 — helm-catalog/bootstrap-project  (the chart)
+  Source 2 — <team-gitops-repo>              (provides bootstrap-config.yaml values)
+
+  Sync wave 4 — after team-argocd (wave 3) so the team ArgoCD namespace and managed-by
+  labels are already in place when namespaces are created.
+*/ -}}
+{{- range $teamName, $teamConfig := .Values.teams }}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: {{ printf "team-bootstrap-%s" $teamName | quote }}
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  labels:
+    platform/chart: bootstrap-project
+    platform/team: {{ $teamName | quote }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    # Cluster-scoped resources (Namespaces) don't use this namespace, but it must be
+    # a namespace the platform ArgoCD can manage. openshift-gitops is always safe.
+    namespace: openshift-gitops
+    server: https://kubernetes.default.svc
+  project: default
+  sources:
+    # Source 1: the bootstrap-project Helm chart
+    - repoURL: https://github.com/nu-j/helm-catalog.git
+      path: bootstrap-project
+      targetRevision: main
+      helm:
+        # Values come from the team's own gitops repo (source 2, ref: teamRepo).
+        # Team controls their namespaces by editing bootstrap-config.yaml in their repo.
+        valueFiles:
+          - $teamRepo/team-spaces.yaml
+    # Source 2: the team's gitops repo — provides bootstrap-config.yaml values.
+    # ref: teamRepo makes it available as $teamRepo in the helm valueFiles above.
+    - repoURL: {{ $teamConfig.gitopsRepoURL | quote }}
+      targetRevision: {{ $teamConfig.targetRevision | default "main" | quote }}
+      ref: teamRepo
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - Validate=true
+{{- end }}
