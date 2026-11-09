@@ -15,8 +15,9 @@ Leaf charts (actual K8s resources) live in the **helm-catalog** repo.
 ```
 templates/
 ├── _helpers.tpl          # shared helpers (default.variables, default.valueFiles)
-├── hub/                  # rendered only when clusterType=hub
-│   └── advanced-cluster-security-app.yaml
+├── management/           # rendered only when clusterType=management
+│   ├── advanced-cluster-security-app.yaml
+│   └── gitea-app.yaml
 ├── spoke/                # rendered only when clusterType!=hub
 │   ├── capabilities/     # consumer-facing platform services (Reloader, Strimzi, etc.)
 │   │   └── stakater-reloader-app.yaml
