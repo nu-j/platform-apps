@@ -8,6 +8,27 @@
 {{- range $operator := .Values.operators }}
 {{- $customSyncPolicy := (default false (($operator).syncPolicy)) }}
 {{- if $operator.enabled }}
+{{- /*
+  Helm's `default` treats boolean false as empty — never use it for bools.
+  hasKey + explicit fallback preserves createOperatorGroup: false (e.g. openshift-operators).
+*/ -}}
+{{- $createOG := true -}}
+{{- if hasKey $operator "createOperatorGroup" -}}
+{{- $createOG = $operator.createOperatorGroup -}}
+{{- end -}}
+{{- $createNS := false -}}
+{{- if hasKey $operator "createNamespace" -}}
+{{- $createNS = $operator.createNamespace -}}
+{{- end -}}
+{{- $targetOwnNS := false -}}
+{{- if hasKey $operator "targetOwnNamespace" -}}
+{{- $targetOwnNS = $operator.targetOwnNamespace -}}
+{{- end -}}
+{{- $approveHook := false -}}
+{{- if hasKey $operatorInstaller "approveManualInstallPlanViaHook" -}}
+{{- $approveHook = $operatorInstaller.approveManualInstallPlanViaHook -}}
+{{- end -}}
+{{- $approval := ($operator.installPlanApproval | default $operatorInstaller.installPlanApproval | default "Manual") -}}
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: Application
@@ -29,14 +50,14 @@ spec:
   sources:
     - helm:
         valuesObject:
-          approveManualInstallPlanViaHook: {{ default "false" $operatorInstaller.approveManualInstallPlanViaHook }}
-          createOperatorGroup: {{ default "true" $operator.createOperatorGroup }}
-          {{- if $operator.createOperatorGroup }}
+          approveManualInstallPlanViaHook: {{ $approveHook }}
+          createOperatorGroup: {{ $createOG }}
+          {{- if $createOG }}
           operatorGroups:
             - name: {{ $operator.operatorGroupName }}
               namespace: {{ default $operator.operatorGroupName $operator.operatorGroupNamespace }}
-              createNamespace: {{ default "false" $operator.createNamespace }}
-              targetOwnNamespace: {{ default "false" $operator.targetOwnNamespace }}
+              createNamespace: {{ $createNS }}
+              targetOwnNamespace: {{ $targetOwnNS }}
           {{- end }}
           {{- if $operator.operators }}
           operators: {{ $operator.operators | toYaml | nindent 12 }}
@@ -46,12 +67,22 @@ spec:
               channel: {{ $operator.channel }}
               csv: {{ $operator.csv }}
               source: {{ $operator.source }}
-              installPlanApproval: {{ default "Manual" $operatorInstaller.installPlanApproval }}
+              installPlanApproval: {{ $approval }}
               sourceNamespace: openshift-marketplace
+              {{- if $operator.installPlanApproverWaitLoopInsideJob }}
+              installPlanApproverWaitLoopInsideJob: {{ $operator.installPlanApproverWaitLoopInsideJob }}
+              {{- end }}
+              {{- if $operator.installPlanApproverRetries }}
+              installPlanApproverRetries: {{ $operator.installPlanApproverRetries }}
+              {{- end }}
+              {{- if $operator.installPlanApproverActiveDeadlineSeconds }}
+              installPlanApproverActiveDeadlineSeconds: {{ $operator.installPlanApproverActiveDeadlineSeconds }}
+              {{- end }}
               {{- if $operator.config }}
               config: {{ $operator.config | toYaml | nindent 16 }}
               {{- end }}
           {{ end }}
+
       path:  {{ $installerPath }}
       repoURL: {{ $installerRepoURL }}
       targetRevision: {{ $installerTargetRevision }}
