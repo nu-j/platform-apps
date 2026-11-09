@@ -17,7 +17,8 @@ templates/
 ├── _helpers.tpl          # shared helpers (default.variables, default.valueFiles)
 ├── management/           # rendered only when clusterType=management
 │   ├── advanced-cluster-security-app.yaml
-│   └── gitea-app.yaml
+│   ├── gitea-app.yaml
+│   └── tekton-pipelines-app.yaml
 ├── spoke/                # rendered only when clusterType!=hub
 │   ├── capabilities/     # consumer-facing platform services (Reloader, Strimzi, etc.)
 │   │   └── stakater-reloader-app.yaml

@@ -1,0 +1,51 @@
+{{- if and (eq .Values.clusterType "management") (((((.Values.platform).argocdApps).tektonPipelines).enabled) | default false) }}
+{{- $appConfig := ((.Values.platform).argocdApps).tektonPipelines }}
+{{- $vars := dict -}}
+{{- include "default.variables" (dict "vars" $vars "appConfig" $appConfig "Values" .Values) }}
+{{- $repoURL        := default "https://github.com/nu-j/helm-catalog.git" $vars.repoURL -}}
+{{- $path           := default "tekton-pipelines" $vars.path -}}
+{{- $targetRevision := default "main" $vars.targetRevision -}}
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tekton-pipelines
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  labels:
+    platform/chart: tekton-pipelines
+    platform/version: {{ $vars.platformVersion }}
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: {{ $vars.destinationNamespace }}
+    server: https://kubernetes.default.svc
+  project: default
+  info:
+   - name: "Chart repo URL"
+     value: "{{ $repoURL }}"
+  sources:
+    - helm:
+        valueFiles:
+          {{- include "default.valueFiles" (dict "vars" $vars) | nindent 10 }}
+        {{- if $appConfig.values }}
+        valuesObject: {{ $appConfig.values | toYaml | nindent 10 }}
+        {{- end }}
+        ignoreMissingValueFiles: true
+      path: {{ $path }}
+      repoURL: {{ $repoURL }}
+      targetRevision: {{ $targetRevision }}
+    - path: .
+      ref: platform_values
+      repoURL: https://github.com/nu-j/platform-config.git
+      targetRevision: {{ $vars.platformVersion }}
+{{- if $vars.customSyncPolicy }}
+  syncPolicy: {{ $vars.customSyncPolicy | toYaml | nindent 4 }}
+{{- else if $vars.platformSyncPolicy }}
+  syncPolicy: {{ $vars.platformSyncPolicy | toYaml | nindent 4 }}
+{{- else }}
+  syncPolicy: {}
+{{- end }}
+{{- end }}
